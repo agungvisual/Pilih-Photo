@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Generator Link Client</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  text-align: center;
+  margin-top: 100px;
+}
+
+input {
+  width: 300px;
+  padding: 10px;
+  margin: 5px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 5px;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.result {
+  margin-top: 20px;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Generate Link Client</h2>
+
+<input type="text" id="link" placeholder="Paste link Google Drive">
+<br>
+<input type="number" id="max" placeholder="Max foto (contoh: 20)">
+<br>
+
+<button onclick="generate()">Generate</button>
+<button onclick="copyLink()">Copy Link</button>
+
+<p class="result" id="hasil"></p>
+
+<script>
+let finalLink = "";
+
+function generate() {
+  const link = document.getElementById("link").value;
+  const max = document.getElementById("max").value;
+
+  if (!link.includes("folders")) {
+    alert("Link tidak valid!");
+    return;
+  }
+
+  const id = link.split("/folders/")[1].split("?")[0];
+
+  finalLink = `${window.location.origin}/?folder=${id}`;
+
+  if (max) {
+    finalLink += `&max=${max}`;
+  }
+
+  document.getElementById("hasil").innerText = finalLink;
+}
+
+function copyLink() {
+  if (!finalLink) {
+    alert("Generate dulu!");
+    return;
+  }
+
+  navigator.clipboard.writeText(finalLink);
+  alert("Link berhasil di-copy!");
+}
+</script>
+
+</body>
+</html>
