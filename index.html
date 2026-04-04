@@ -62,10 +62,12 @@ function generate() {
 
   const id = link.split("/folders/")[1].split("?")[0];
 
-  // ✅ FIX: arah ke admin.html (client viewer)
-  finalLink = `admin.html?folder=${id}${max ? `&max=${max}` : ""}`;
+  // ambil nama repo otomatis
+  const repo = window.location.pathname.split("/")[1];
 
-  const fullURL = window.location.origin + "/" + finalLink;
+  const finalLink = `admin.html?folder=${id}${max ? `&max=${max}` : ""}`;
+
+  const fullURL = window.location.origin + "/" + repo + "/" + finalLink;
 
   document.getElementById("hasil").innerText = fullURL;
 }
