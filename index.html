@@ -62,12 +62,12 @@ function generate() {
 
   const id = link.split("/folders/")[1].split("?")[0];
 
-  // ambil nama repo otomatis
-  const repo = window.location.pathname.split("/")[1];
+  // ✅ ambil base URL otomatis (INI PALING AMAN)
+  const basePath = window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1);
 
   const finalLink = `admin.html?folder=${id}${max ? `&max=${max}` : ""}`;
 
-  const fullURL = window.location.origin + "/" + repo + "/" + finalLink;
+  const fullURL = basePath + finalLink;
 
   document.getElementById("hasil").innerText = fullURL;
 }
