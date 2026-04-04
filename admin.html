@@ -14,46 +14,46 @@ body {
 
 h2 {
   text-align: center;
-  padding: 20px;
+  padding: 15px;
 }
 
+/* GRID */
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 10px;
   padding: 10px;
 }
 
 .item {
   position: relative;
-  background: #fff;
   border-radius: 10px;
   overflow: hidden;
 }
 
 .item img {
   width: 100%;
-  height: 150px;
+  height: 140px;
   object-fit: cover;
   cursor: pointer;
 }
 
 .checkbox {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
 }
 
 .selected {
   border: 3px solid #0ea5e9;
 }
 
-/* 🔥 FLOAT WA */
+/* FLOAT WA */
 .wa-btn {
   position: fixed;
-  bottom: 20px;
+  bottom: 70px;
   right: 20px;
   background: #25D366;
   color: white;
@@ -63,16 +63,15 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: 28px;
   cursor: pointer;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* 🔥 COUNT BAR */
+/* COUNT BAR */
 .count-bar {
   position: fixed;
   bottom: 0;
-  left: 0;
   width: 100%;
   background: #0ea5e9;
   color: white;
@@ -81,17 +80,17 @@ h2 {
   font-weight: bold;
 }
 
-/* 🔥 MODAL */
+/* MODAL */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.9);
+  background: rgba(0,0,0,0.95);
   display: none;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   flex-direction: column;
 }
 
@@ -104,13 +103,15 @@ h2 {
   margin-top: 15px;
   padding: 10px 20px;
   border: none;
+  background: #0ea5e9;
+  color: white;
   cursor: pointer;
 }
 
 .close {
   position: absolute;
   top: 20px;
-  right: 20px;
+  right: 25px;
   font-size: 30px;
   color: white;
   cursor: pointer;
@@ -124,27 +125,24 @@ h2 {
 
 <div id="gallery" class="gallery"></div>
 
-<!-- 🔥 COUNT -->
 <div class="count-bar" id="count">Dipilih: 0</div>
-
-<!-- 🔥 WA BUTTON -->
 <div class="wa-btn" onclick="kirimWA()">📤</div>
 
-<!-- 🔥 MODAL -->
 <div class="modal" id="modal">
   <span class="close" onclick="closeModal()">×</span>
   <img id="modalImg">
-  <button onclick="toggleSelectFromModal()">Pilih</button>
+  <button onclick="toggleSelectFromModal()">Pilih Foto</button>
 </div>
 
 <script>
-const API_KEY = "AIzaSyCiE8qwQ_IU_xtWZaby0OL272_VApROZv8";
-const NO_WA = "6281238693773"; // 🔥 ganti dengan nomor kamu
+const API_KEY = "ISI_API_KEY_KAMU";
+const NO_WA = "6281238693773";
+
 const params = new URLSearchParams(window.location.search);
 const FOLDER_ID = params.get("folder");
 
 let selected = [];
-let currentId = null;
+let currentFile = null;
 
 async function loadPhotos() {
   const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}`;
@@ -162,14 +160,16 @@ async function loadPhotos() {
 
       const img = document.createElement("img");
       img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1000`;
-      img.onclick = () => openModal(file.id, img.src);
+      img.alt = file.name;
+
+      img.onclick = () => openModal(file, img.src);
 
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.className = "checkbox";
 
       checkbox.onchange = () => {
-        toggleSelect(file.id, div, checkbox);
+        toggleSelect(file, div, checkbox);
       };
 
       div.appendChild(img);
@@ -179,12 +179,14 @@ async function loadPhotos() {
   });
 }
 
-function toggleSelect(id, div, checkbox) {
+function toggleSelect(file, div, checkbox) {
+  const exist = selected.find(x => x.id === file.id);
+
   if (checkbox.checked) {
-    selected.push(id);
+    if (!exist) selected.push(file);
     div.classList.add("selected");
   } else {
-    selected = selected.filter(x => x !== id);
+    selected = selected.filter(x => x.id !== file.id);
     div.classList.remove("selected");
   }
 
@@ -195,10 +197,10 @@ function updateCount() {
   document.getElementById("count").innerText = "Dipilih: " + selected.length;
 }
 
-function openModal(id, src) {
-  currentId = id;
-  document.getElementById("modal").style.display = "flex";
+function openModal(file, src) {
+  currentFile = file;
   document.getElementById("modalImg").src = src;
+  document.getElementById("modal").style.display = "flex";
 }
 
 function closeModal() {
@@ -212,9 +214,9 @@ function toggleSelectFromModal() {
     const img = item.querySelector("img");
     const checkbox = item.querySelector("input");
 
-    if (img.src.includes(currentId)) {
+    if (img.alt === currentFile.name) {
       checkbox.checked = !checkbox.checked;
-      toggleSelect(currentId, item, checkbox);
+      toggleSelect(currentFile, item, checkbox);
     }
   });
 
@@ -227,7 +229,10 @@ function kirimWA() {
     return;
   }
 
-  const text = "Saya memilih foto:\n" + selected.join("\n");
+  const list = selected.map((f, i) => `${i+1}. ${f.name}`).join("\n");
+
+  const text = "Halo, saya memilih foto berikut:\n\n" + list;
+
   const url = `https://wa.me/${NO_WA}?text=${encodeURIComponent(text)}`;
 
   window.open(url, "_blank");
