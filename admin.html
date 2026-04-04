@@ -2,83 +2,187 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Generator Link Client</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Pilih Foto</title>
 
 <style>
 body {
   font-family: sans-serif;
+  background: #f5f7fa;
+  margin: 0;
   text-align: center;
-  margin-top: 100px;
 }
 
-input {
-  width: 300px;
-  padding: 10px;
-  margin: 5px;
+h2 {
+  margin: 20px;
 }
 
-button {
-  padding: 10px 20px;
-  margin: 5px;
-  background: #0ea5e9;
-  color: white;
-  border: none;
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
+  gap: 12px;
+  padding: 20px;
+}
+
+.item {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.item.selected {
+  outline: 3px solid #0ea5e9;
+}
+
+img.thumb {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
   cursor: pointer;
 }
 
-.result {
-  margin-top: 20px;
-  font-weight: bold;
+.checkbox {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  transform: scale(1.3);
+}
+
+.label {
+  padding: 6px;
+  font-size: 12px;
+}
+
+.footer {
+  padding: 20px;
+  background: #ffffff;
+  border-top: 1px solid #ddd;
+}
+
+.footer button {
+  width: 100%;
+  max-width: 300px;
+  padding: 14px;
+  border: none;
+  border-radius: 30px;
+  background: #0ea5e9;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Generate Link Client</h2>
+<h2>Pilih Foto Anda</h2>
+<p>Maksimal pilih: <span id="maxText">-</span></p>
 
-<input type="text" id="link" placeholder="Paste link Google Drive">
-<br>
-<input type="number" id="max" placeholder="Max foto (contoh: 20)">
-<br>
+<div id="gallery" class="gallery"></div>
 
-<button onclick="generate()">Generate</button>
-<button onclick="copyLink()">Copy Link</button>
-
-<p class="result" id="hasil"></p>
+<div class="footer">
+  <p>Dipilih: <span id="count">0</span></p>
+  <button onclick="kirimWA()">Kirim ke WhatsApp</button>
+</div>
 
 <script>
-let finalLink = "";
+const API_KEY = "YOUR_API_KEY_HERE"; // 🔥 ganti kalau perlu
 
-function generate() {
-  const link = document.getElementById("link").value;
-  const max = document.getElementById("max").value;
+const params = new URLSearchParams(window.location.search);
+const FOLDER_ID = params.get("folder");
+const MAX = parseInt(params.get("max")) || null;
 
-  if (!link.includes("folders")) {
-    alert("Link tidak valid!");
+let selected = [];
+
+if (!FOLDER_ID) {
+  document.body.innerHTML = "Link tidak valid";
+}
+
+if (MAX) {
+  document.getElementById("maxText").innerText = MAX;
+}
+
+async function loadPhotos() {
+  let allFiles = [];
+  let pageToken = "";
+
+  do {
+    const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}&fields=nextPageToken,files(id,name,mimeType)&pageSize=1000&pageToken=${pageToken}`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.files) allFiles = allFiles.concat(data.files);
+    pageToken = data.nextPageToken || null;
+
+  } while (pageToken);
+
+  const gallery = document.getElementById("gallery");
+
+  allFiles.forEach(file => {
+    if (file.mimeType.includes("image")) {
+
+      const div = document.createElement("div");
+      div.className = "item";
+
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = `https://drive.google.com/thumbnail?id=${file.id}`;
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "checkbox";
+
+      checkbox.onclick = (e) => {
+        e.stopPropagation();
+
+        if (checkbox.checked) {
+          if (MAX && selected.length >= MAX) {
+            alert(`Maksimal ${MAX} foto`);
+            checkbox.checked = false;
+            return;
+          }
+          selected.push(file.name);
+          div.classList.add("selected");
+        } else {
+          selected = selected.filter(x => x !== file.name);
+          div.classList.remove("selected");
+        }
+
+        document.getElementById("count").innerText = selected.length;
+      };
+
+      const label = document.createElement("div");
+      label.className = "label";
+      label.innerText = file.name;
+
+      div.appendChild(img);
+      div.appendChild(checkbox);
+      div.appendChild(label);
+
+      gallery.appendChild(div);
+    }
+  });
+}
+
+function kirimWA() {
+  if (selected.length === 0) {
+    alert("Pilih foto dulu!");
     return;
   }
 
-  const id = link.split("/folders/")[1].split("?")[0];
+  const nomor = "6281238693773";
 
-  finalLink = `${window.location.origin}/?folder=${id}`;
+  const pesan = encodeURIComponent(
+    "Halo, saya memilih foto berikut:\n\n" + selected.join("\n")
+  );
 
-  if (max) {
-    finalLink += `&max=${max}`;
-  }
-
-  document.getElementById("hasil").innerText = finalLink;
+  window.open(`https://wa.me/${nomor}?text=${pesan}`, "_blank");
 }
 
-function copyLink() {
-  if (!finalLink) {
-    alert("Generate dulu!");
-    return;
-  }
-
-  navigator.clipboard.writeText(finalLink);
-  alert("Link berhasil di-copy!");
-}
+loadPhotos();
 </script>
 
 </body>
