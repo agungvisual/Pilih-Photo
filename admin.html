@@ -3,73 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Pilih Foto</title>
 
 <style>
 body {
   font-family: sans-serif;
-  background: #f5f7fa;
   margin: 0;
-  text-align: center;
+  background: #f5f5f5;
 }
 
 h2 {
-  margin: 20px;
+  text-align: center;
+  padding: 20px;
 }
 
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px,1fr));
-  gap: 12px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  padding: 10px;
 }
 
 .item {
-  background: white;
+  position: relative;
+  background: #fff;
   border-radius: 10px;
   overflow: hidden;
-  position: relative;
 }
 
-.item.selected {
-  outline: 3px solid #0ea5e9;
-}
-
-img.thumb {
+.item img {
   width: 100%;
-  height: 140px;
+  height: 150px;
   object-fit: cover;
   cursor: pointer;
 }
 
 .checkbox {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  transform: scale(1.3);
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
 }
 
-.label {
-  padding: 6px;
-  font-size: 12px;
+.selected {
+  border: 3px solid #0ea5e9;
 }
 
-.footer {
-  padding: 20px;
-  background: #ffffff;
-  border-top: 1px solid #ddd;
+/* 🔥 FLOAT WA */
+.wa-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25D366;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-.footer button {
+/* 🔥 COUNT BAR */
+.count-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
   width: 100%;
-  max-width: 300px;
-  padding: 14px;
-  border: none;
-  border-radius: 30px;
   background: #0ea5e9;
   color: white;
-  font-size: 16px;
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+}
+
+/* 🔥 MODAL */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.modal img {
+  max-width: 90%;
+  max-height: 80%;
+}
+
+.modal button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+}
+
+.close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 30px;
+  color: white;
   cursor: pointer;
 }
 </style>
@@ -77,109 +120,117 @@ img.thumb {
 
 <body>
 
-<h2>Pilih Foto Anda</h2>
-<p>Maksimal pilih: <span id="maxText">-</span></p>
+<h2>Pilih Foto</h2>
 
 <div id="gallery" class="gallery"></div>
 
-<div class="footer">
-  <p>Dipilih: <span id="count">0</span></p>
-  <button onclick="kirimWA()">Kirim ke WhatsApp</button>
+<!-- 🔥 COUNT -->
+<div class="count-bar" id="count">Dipilih: 0</div>
+
+<!-- 🔥 WA BUTTON -->
+<div class="wa-btn" onclick="kirimWA()">📤</div>
+
+<!-- 🔥 MODAL -->
+<div class="modal" id="modal">
+  <span class="close" onclick="closeModal()">×</span>
+  <img id="modalImg">
+  <button onclick="toggleSelectFromModal()">Pilih</button>
 </div>
 
 <script>
 const API_KEY = "AIzaSyCiE8qwQ_IU_xtWZaby0OL272_VApROZv8";
-
+const NO_WA = "6281238693773"; // 🔥 ganti dengan nomor kamu
 const params = new URLSearchParams(window.location.search);
 const FOLDER_ID = params.get("folder");
-const MAX = parseInt(params.get("max")) || null;
 
 let selected = [];
-
-if (!FOLDER_ID) {
-  document.body.innerHTML = "Link tidak valid";
-}
-
-if (MAX) {
-  document.getElementById("maxText").innerText = MAX;
-}
+let currentId = null;
 
 async function loadPhotos() {
-  let allFiles = [];
-  let pageToken = "";
+  const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}`;
 
-  do {
-    const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}&fields=nextPageToken,files(id,name,mimeType)&pageSize=1000&pageToken=${pageToken}`;
-    
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.files) allFiles = allFiles.concat(data.files);
-    pageToken = data.nextPageToken || null;
-
-  } while (pageToken);
+  const res = await fetch(url);
+  const data = await res.json();
 
   const gallery = document.getElementById("gallery");
 
-  allFiles.forEach(file => {
+  data.files.forEach(file => {
     if (file.mimeType.includes("image")) {
 
       const div = document.createElement("div");
       div.className = "item";
 
       const img = document.createElement("img");
-      img.className = "thumb";
-      img.src = `https://drive.google.com/thumbnail?id=${file.id}`;
+      img.src = `https://drive.google.com/thumbnail?id=${file.id}&sz=w1000`;
+      img.onclick = () => openModal(file.id, img.src);
 
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.className = "checkbox";
 
-      checkbox.onclick = (e) => {
-        e.stopPropagation();
-
-        if (checkbox.checked) {
-          if (MAX && selected.length >= MAX) {
-            alert(`Maksimal ${MAX} foto`);
-            checkbox.checked = false;
-            return;
-          }
-          selected.push(file.name);
-          div.classList.add("selected");
-        } else {
-          selected = selected.filter(x => x !== file.name);
-          div.classList.remove("selected");
-        }
-
-        document.getElementById("count").innerText = selected.length;
+      checkbox.onchange = () => {
+        toggleSelect(file.id, div, checkbox);
       };
-
-      const label = document.createElement("div");
-      label.className = "label";
-      label.innerText = file.name;
 
       div.appendChild(img);
       div.appendChild(checkbox);
-      div.appendChild(label);
-
       gallery.appendChild(div);
     }
   });
 }
 
+function toggleSelect(id, div, checkbox) {
+  if (checkbox.checked) {
+    selected.push(id);
+    div.classList.add("selected");
+  } else {
+    selected = selected.filter(x => x !== id);
+    div.classList.remove("selected");
+  }
+
+  updateCount();
+}
+
+function updateCount() {
+  document.getElementById("count").innerText = "Dipilih: " + selected.length;
+}
+
+function openModal(id, src) {
+  currentId = id;
+  document.getElementById("modal").style.display = "flex";
+  document.getElementById("modalImg").src = src;
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function toggleSelectFromModal() {
+  const items = document.querySelectorAll(".item");
+
+  items.forEach(item => {
+    const img = item.querySelector("img");
+    const checkbox = item.querySelector("input");
+
+    if (img.src.includes(currentId)) {
+      checkbox.checked = !checkbox.checked;
+      toggleSelect(currentId, item, checkbox);
+    }
+  });
+
+  closeModal();
+}
+
 function kirimWA() {
   if (selected.length === 0) {
-    alert("Pilih foto dulu!");
+    alert("Belum pilih foto!");
     return;
   }
 
-  const nomor = "6281238693773";
+  const text = "Saya memilih foto:\n" + selected.join("\n");
+  const url = `https://wa.me/${NO_WA}?text=${encodeURIComponent(text)}`;
 
-  const pesan = encodeURIComponent(
-    "Halo, saya memilih foto berikut:\n\n" + selected.join("\n")
-  );
-
-  window.open(`https://wa.me/${nomor}?text=${pesan}`, "_blank");
+  window.open(url, "_blank");
 }
 
 loadPhotos();
