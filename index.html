@@ -62,15 +62,10 @@ function generate() {
 
   const id = link.split("/folders/")[1].split("?")[0];
 
-  // ✅ FIX: pakai relative path
-  finalLink = `client.html?folder=${id}`;
+  // ✅ FIX: arah ke admin.html (client viewer)
+  finalLink = `admin.html?folder=${id}${max ? `&max=${max}` : ""}`;
 
-  if (max) {
-    finalLink += `&max=${max}`;
-  }
-
-  // tampilkan full URL biar bisa langsung dibuka
-  const fullURL = window.location.href.replace("index.html", "") + finalLink;
+  const fullURL = window.location.origin + "/" + finalLink;
 
   document.getElementById("hasil").innerText = fullURL;
 }
@@ -81,7 +76,7 @@ function copyLink() {
     return;
   }
 
-  const fullURL = window.location.href.replace("index.html", "") + finalLink;
+  const fullURL = window.location.origin + "/" + finalLink;
 
   navigator.clipboard.writeText(fullURL);
   alert("Link berhasil di-copy!");
