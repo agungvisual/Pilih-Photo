@@ -65,7 +65,7 @@ function generate() {
   // ✅ ambil base URL otomatis (INI PALING AMAN)
   const basePath = window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1);
 
-  const finalLink = `admin.html?folder=${id}${max ? `&max=${max}` : ""}`;
+  finalLink = `admin.html?folder=${id}${max ? `&max=${max}` : ""}`;
 
   const fullURL = basePath + finalLink;
 
