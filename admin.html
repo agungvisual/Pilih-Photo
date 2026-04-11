@@ -136,7 +136,7 @@ h2 {
 
 <script>
 const API_KEY = "AIzaSyCiE8qwQ_IU_xtWZaby0OL272_VApROZv8";
-const NO_WA = "6281238693773";
+const NO_WA = "6285158568611";
 
 const params = new URLSearchParams(window.location.search);
 const FOLDER_ID = params.get("folder");
@@ -145,14 +145,23 @@ let selected = [];
 let currentFile = null;
 
 async function loadPhotos() {
-  const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-
   const gallery = document.getElementById("gallery");
 
-  data.files.forEach(file => {
+  let pageToken = "";
+  let allFiles = [];
+
+  do {
+    const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&pageSize=1000&fields=nextPageToken,files(id,name,mimeType)&key=${API_KEY}${pageToken ? `&pageToken=${pageToken}` : ""}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    allFiles = allFiles.concat(data.files);
+    pageToken = data.nextPageToken;
+
+  } while (pageToken);
+
+  allFiles.forEach(file => {
     if (file.mimeType.includes("image")) {
 
       const div = document.createElement("div");
